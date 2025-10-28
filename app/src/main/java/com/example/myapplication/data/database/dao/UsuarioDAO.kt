@@ -1,59 +1,66 @@
 package com.example.myapplication.data.database.dao
 
-
-
-import kotlinx.coroutines.flow.Flow
-import androidx.room.*
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.example.myapplication.data.database.entities.Usuario
+import kotlinx.coroutines.flow.Flow
+
+// =================================================================================
+// 1. DATA ACCESS OBJECT (DAO): UsuarioDAO
+// =================================================================================
 
 @Dao
 interface UsuarioDAO {
 
+    // --- Operações de Escrita (Suspend Functions) ---
 
-    @Query("SELECT * FROM tabela_usuarios LIMIT 1")
-    suspend fun buscarUsuarioUnico(): Usuario?
     /**
      * Insere um novo usuário na tabela.
-     * @param usuario O objeto Usuario a ser inserido.
      */
     @Insert
     suspend fun inserir(usuario: Usuario)
 
     /**
      * Atualiza um usuário existente na tabela.
-     * @param usuario O objeto Usuario a ser atualizado (baseado no ID).
      */
     @Update
     suspend fun atualizar(usuario: Usuario)
 
     /**
      * Deleta um usuário da tabela.
-     * @param usuario O objeto Usuario a ser deletado (baseado no ID).
      */
     @Delete
     suspend fun deletar(usuario: Usuario)
 
-    /**
-     * Busca todos os usuários na tabela.
-     * @return Uma lista de todos os objetos Usuario, ordenados por ID.
-     */
-    @Query("SELECT * FROM tabela_usuarios ORDER BY id ASC")
-    suspend fun buscarTodos(): List<Usuario>
+    // --- Operações de Leitura (Suspend Functions) ---
 
     /**
      * Busca um usuário específico pelo ID.
-     * @param idUsuario O ID do usuário a ser buscado.
-     * @return O objeto Usuario correspondente, ou null se não for encontrado.
      */
     @Query("SELECT * FROM tabela_usuarios WHERE id = :idUsuario")
     suspend fun buscarPorId(idUsuario: Int): Usuario?
 
-    // Método reativo do Room para MVVM
-    @Query("SELECT * FROM tabela_usuarios LIMIT 1") // Se o nome da sua tabela é 'tabela_usuarios'
+    /**
+     * Busca o único (ou primeiro) usuário na tabela de forma síncrona.
+     */
+    @Query("SELECT * FROM tabela_usuarios LIMIT 1")
+    suspend fun buscarUsuarioUnico(): Usuario?
+
+    /**
+     * Busca todos os usuários na tabela (útil para debug ou admins).
+     */
+    @Query("SELECT * FROM tabela_usuarios ORDER BY id ASC")
+    suspend fun buscarTodos(): List<Usuario>
+
+    // --- Operações de Leitura (Flow Reativo para MVVM) ---
+
+    /**
+     * Busca o único (ou primeiro) usuário na tabela de forma reativa.
+     * Retorna um Flow que emite o usuário sempre que os dados mudam.
+     */
+    @Query("SELECT * FROM tabela_usuarios LIMIT 1")
     fun buscarUsuarioUnicoFlow(): Flow<Usuario?>
 }

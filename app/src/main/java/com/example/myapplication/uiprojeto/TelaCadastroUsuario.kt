@@ -136,7 +136,7 @@ fun TelaCadastroUsuario(modifier: Modifier = Modifier) {
                         snackbarData = data,
                         containerColor = containerColor,
                         contentColor = Color.White,
-                   )
+                    )
                 }
 
             }

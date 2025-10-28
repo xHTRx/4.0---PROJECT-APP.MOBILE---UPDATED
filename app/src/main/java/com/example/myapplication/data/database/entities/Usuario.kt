@@ -3,6 +3,10 @@ package com.example.myapplication.data.database.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+// =================================================================================
+// 1. ENTIDADE ROOM: Usuario
+// =================================================================================
+
 // Define o nome da tabela no banco de dados.
 @Entity(tableName = "tabela_usuarios")
 data class Usuario(
@@ -11,10 +15,10 @@ data class Usuario(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
-    // Campos da tabela
+    // --- Campos de Dados ---
     val nome: String,
     val email: String,
     val senha: String,
     val cpf: String,
-    val telefone: String?
+    val telefone: String? // Campo opcional
 )

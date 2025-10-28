@@ -10,7 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// --- UiState: Define o estado completo da tela ---
+// =================================================================================
+// 1. DATA CLASS: UsuarioUiState (Estado da Tela)
+// =================================================================================
+
 data class UsuarioUiState(
     val usuarioPrincipal: Usuario? = null,
     val isLoading: Boolean = true,
@@ -21,24 +24,29 @@ data class UsuarioUiState(
     val telefone: String = "",
     val showSnackbar: Boolean = false,
     val snackbarMessage: String = "",
-    val snackbarAction: String = ""
+    val snackbarAction: String = "" // Usado para customizar a cor do Snackbar na UI
 ) {
+    /** Propriedade computada para definir o texto do botão baseado no estado. */
     val textoBotao: String
         get() = if (usuarioPrincipal == null) "Criar Conta" else "Salvar Alterações"
 }
 
-// --- ViewModel ---
+// =================================================================================
+// 2. VIEWMODEL: UsuarioViewModel (Lógica de Negócios)
+// =================================================================================
+
 class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UsuarioUiState())
     val uiState: StateFlow<UsuarioUiState> = _uiState.asStateFlow()
 
     init {
+        // Observa mudanças no usuário no banco de dados e atualiza o estado da UI.
         viewModelScope.launch {
             repository.buscarUsuarioUnicoFlow().collect { usuario ->
                 _uiState.update { currentState ->
-                    // Ao carregar, preenche os campos com os dados do usuário, se existir
                     if (usuario != null) {
+                        // Preenche os campos com os dados do usuário existente.
                         currentState.copy(
                             usuarioPrincipal = usuario,
                             nome = usuario.nome,
@@ -49,7 +57,7 @@ class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() 
                             isLoading = false
                         )
                     } else {
-                        // Limpa os campos se o usuário for deletado ou não existir
+                        // Limpa os campos se o usuário for deletado ou não existir (modo Cadastro).
                         currentState.copy(
                             usuarioPrincipal = null,
                             nome = "",
@@ -65,23 +73,27 @@ class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() 
         }
     }
 
-    // --- Eventos da UI (Eventos) ---
+    // --- Handlers de Mudança de Campo (Eventos) ---
     fun onNomeChange(novoNome: String) = _uiState.update { it.copy(nome = novoNome) }
     fun onEmailChange(novoEmail: String) = _uiState.update { it.copy(email = novoEmail) }
     fun onSenhaChange(novaSenha: String) = _uiState.update { it.copy(senha = novaSenha) }
     fun onCpfChange(novoCpf: String) = _uiState.update { it.copy(cpf = novoCpf) }
     fun onTelefoneChange(novoTelefone: String) = _uiState.update { it.copy(telefone = novoTelefone) }
-    fun onSnackbarDismiss() = _uiState.update { it.copy(showSnackbar = false) } // Evento para fechar o snackbar
+    fun onSnackbarDismiss() = _uiState.update { it.copy(showSnackbar = false) }
 
+    /**
+     * Salva ou atualiza o usuário no banco de dados.
+     */
     fun onSave() {
         val state = _uiState.value
+        // Validação básica (pode ser aprimorada)
         if (state.nome.isBlank() || state.email.isBlank() || state.senha.isBlank() || state.cpf.isBlank()) return
 
         val telefoneFinal = state.telefone.ifBlank { null }
-        var mensagem: String
-        var acao: String
+        val usuarioExistente = state.usuarioPrincipal
 
-        val usuarioParaSalvar = state.usuarioPrincipal?.copy(
+        // Determina se é uma atualização ou uma nova inserção.
+        val usuarioParaSalvar = usuarioExistente?.copy(
             nome = state.nome,
             email = state.email,
             senha = state.senha,
@@ -96,46 +108,49 @@ class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() 
         )
 
         viewModelScope.launch {
-            if (state.usuarioPrincipal == null) {
-                // 1. Ação no banco de dados
+            val (mensagem, acao) = if (usuarioExistente == null) {
+                // Inserir novo usuário
                 repository.inserir(usuarioParaSalvar)
-                mensagem = "Conta criada com sucesso!"
-                acao = "CREATE"
-
-                // 2. Atualiza o uiState imediatamente
-                _uiState.update {
-                    it.copy(
-                        usuarioPrincipal = usuarioParaSalvar, // <--- ESTE É O PULP DO GATO!
-                        showSnackbar = true,
-                        snackbarMessage = mensagem,
-                        snackbarAction = acao
-                    )
-                }
-
+                Pair("Conta criada com sucesso!", "CREATE")
             } else {
+                // Atualizar usuário existente
                 repository.atualizar(usuarioParaSalvar)
-                mensagem = "Conta editada com sucesso!"
-                acao = "EDIT"
+                Pair("Conta editada com sucesso!", "EDIT")
+            }
 
-                _uiState.update {
-                    it.copy(
-                        usuarioPrincipal = usuarioParaSalvar,
-                        showSnackbar = true,
-                        snackbarMessage = mensagem,
-                        snackbarAction = acao
-                    )
-                }
+            // Atualiza o uiState com a nova mensagem e o usuário salvo
+            _uiState.update {
+                it.copy(
+                    usuarioPrincipal = usuarioParaSalvar,
+                    showSnackbar = true,
+                    snackbarMessage = mensagem,
+                    snackbarAction = acao
+                )
             }
         }
     }
 
+    /*// Atualiza o uiState com a nova mensagem e o usuário salvo
+            _uiState.update {
+                it.copy(
+                    usuarioPrincipal = usuarioParaSalvar,
+                    showSnackbar = true,
+                    snackbarMessage = "",
+                    snackbarAction = "CREATE"
+                )
+            }*/
+
+    /**
+     * Deleta o usuário do banco de dados.
+     */
     fun onDelete() {
         val usuario = _uiState.value.usuarioPrincipal ?: return
 
         viewModelScope.launch {
             repository.deletar(usuario)
 
-            // Exibir Snackbar após a deleção
+            // O flow no `init` cuidará de limpar o estado e setar `usuarioPrincipal = null`,
+            // mas exibimos o Snackbar imediatamente.
             _uiState.update {
                 it.copy(
                     showSnackbar = true,
@@ -147,7 +162,10 @@ class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() 
     }
 }
 
-// --- Factory ---
+// =================================================================================
+// 3. FACTORY: UsuarioViewModelFactory (Injeção de Dependência)
+// =================================================================================
+
 class UsuarioViewModelFactory(private val repository: UsuarioRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(UsuarioViewModel::class.java)) {

@@ -1,6 +1,5 @@
 package com.example.myapplication.uiprojeto
 
-
 import com.example.myapplication.mvvm.data.CronogramaRepository
 import com.example.myapplication.mvvm.data.CronogramaViewModel
 import com.example.myapplication.mvvm.data.CronogramaViewModelFactory
@@ -27,10 +26,86 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
+// =================================================================================
+// 1. TELA PRINCIPAL DO CRONOGRAMA (ORQUESTRADOR)
+// =================================================================================
 
-// -------------------------------------------------------------------------
-// COMPOSABLE INDIVIDUAL DO CARD DO DIA
-// -------------------------------------------------------------------------
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TelaCronograma(modifier: Modifier = Modifier) {
+
+    // --- Configuração MVVM e Estado ---
+    val context = LocalContext.current
+    val db = AppDatabase.getDatabase(context)
+    val cronogramaDao = db.cronogramaDAO()
+
+    val viewModel: CronogramaViewModel = viewModel(
+        factory = CronogramaViewModelFactory(CronogramaRepository(cronogramaDao))
+    )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // --- Estados Locais da UI ---
+    var itemSelecionado by remember { mutableStateOf<Cronograma?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // --- Efeito Colateral (Snackbar) ---
+    LaunchedEffect(uiState.showSnackbar) {
+        if (uiState.showSnackbar) {
+            snackbarHostState.showSnackbar(
+                message = uiState.snackbarMessage,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.onSnackbarDismiss()
+        }
+    }
+
+    // --- Estrutura da Tela (Scaffold) ---
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Agenda Mensal") }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = modifier.fillMaxSize().padding(innerPadding)
+            ) {
+                items(uiState.listaCronograma, key = { it.diaDoMes }) { dia ->
+                    ItemDiaCronograma(
+                        dia = dia,
+                        onEditClick = {
+                            itemSelecionado = it
+                            showEditDialog = true
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // --- DIALOG DE EDIÇÃO (Pop-up) ---
+    if (showEditDialog && itemSelecionado != null) {
+        EditarCronogramaDialog(
+            itemInicial = itemSelecionado!!,
+            onDismiss = { showEditDialog = false },
+            onSave = { itemEditado ->
+                viewModel.onSave(itemEditado)
+                showEditDialog = false
+            }
+        )
+    }
+}
+
+// =================================================================================
+// 2. COMPOSABLE CARD DO DIA
+// =================================================================================
 
 @Composable
 fun ItemDiaCronograma(
@@ -45,17 +120,13 @@ fun ItemDiaCronograma(
         elevation = CardDefaults.cardElevation(3.dp),
     ) {
         Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxSize(),
+            modifier = Modifier.padding(12.dp).fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "DIA ${dia.diaDoMes}",
                     style = MaterialTheme.typography.titleMedium,
@@ -72,100 +143,9 @@ fun ItemDiaCronograma(
     }
 }
 
-
-// -------------------------------------------------------------------------
-// COMPOSABLE TELA DO CRONOGRAMA PRINCIPAL (Refatorada para MVVM)
-// -------------------------------------------------------------------------
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TelaCronograma(modifier: Modifier = Modifier) {
-
-    // --- 1. Instanciação MVVM ---
-    val context = LocalContext.current
-    val db = AppDatabase.getDatabase(context)
-    val cronogramaDao = db.cronogramaDAO()
-
-    val viewModel: CronogramaViewModel = viewModel(
-        factory = CronogramaViewModelFactory(
-            CronogramaRepository(cronogramaDao)
-        )
-    )
-
-    // Coleta o estado reativo
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    // --- 2. Estados Locais da UI ---
-    var itemSelecionado by remember { mutableStateOf<Cronograma?>(null) }
-    var showEditDialog by remember { mutableStateOf(false) }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // --- 3. LaunchedEffect para Eventos de Estado ---
-    LaunchedEffect(uiState.showSnackbar) {
-        if (uiState.showSnackbar) {
-            snackbarHostState.showSnackbar(
-                message = uiState.snackbarMessage,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.onSnackbarDismiss() // Informa ao ViewModel para esconder o snackbar
-        }
-    }
-
-    // --- UI PRINCIPAL ---
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Agenda Mensal") }) },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { innerPadding ->
-
-        // 4. Tratamento de Carregamento
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-
-        // 5. Exibição da Lista
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            items(uiState.listaCronograma, key = { it.diaDoMes }) { dia ->
-                ItemDiaCronograma(
-                    dia = dia,
-                    onEditClick = {
-                        itemSelecionado = it
-                        showEditDialog = true
-                    }
-                )
-            }
-        }
-    }
-
-    // --- DIALOG DE EDIÇÃO (POUP-UP) ---
-    if (showEditDialog && itemSelecionado != null) {
-        EditarCronogramaDialog(
-            itemInicial = itemSelecionado!!,
-            onDismiss = { showEditDialog = false },
-            onSave = { itemEditado ->
-
-                viewModel.onSave(itemEditado)
-                showEditDialog = false // Fecha o dialog
-            }
-        )
-    }
-}
-
-
-// -------------------------------------------------------------------------
-// COMPOSABLE DIALOG DE EDIÇÃO
-// -------------------------------------------------------------------------
+// =================================================================================
+// 3. COMPOSABLE DIALOG DE EDIÇÃO
+// =================================================================================
 
 @Composable
 fun EditarCronogramaDialog(

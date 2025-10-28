@@ -14,49 +14,71 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 
+// =================================================================================
+// 1. TELA PRINCIPAL
+// =================================================================================
+
 @OptIn(ExperimentalPagerApi::class)
-@Preview(showBackground = true)
 @Composable
-fun TelaCarteirinha() {
-    val pagerState = rememberPagerState()
+fun TelaCarteirinha(modifier: Modifier = Modifier) {
+
+    // --- Dados ---
     val images = listOf(
         R.drawable.carteira,
         R.drawable.versocarteira
     )
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.88f)
-                    .heightIn(max = 550.dp)
-                    .padding(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shape = MaterialTheme.shapes.medium,
-                shadowElevation = 8.dp
-            ) {
-                HorizontalPager(
-                    count = images.size,
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    // Exibe a imagem correspondente à página atual
-                    Image(
-                        painter = painterResource(id = images[page]),
-                        contentDescription = if (page == 0) "Frente da Carteirinha Universitária" else "Verso da Carteirinha Universitária",
-                        modifier = Modifier
-                            .fillMaxSize()
-                    )
-                }
-            }
+    // --- Estrutura da Tela ---
+    Column(
+        modifier = modifier.fillMaxSize(), // Usa o modifier que contém o padding do Scaffold principal
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CarteirinhaPager(images = images)
+    }
+}
+
+// =================================================================================
+// 2. COMPONENTE DO PAGER (LÓGICA E APRESENTAÇÃO DO CARD)
+// =================================================================================
+
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+fun CarteirinhaPager(images: List<Int>) {
+
+    val pagerState = rememberPagerState(initialPage = 0)
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(0.88f)
+            .heightIn(max = 550.dp)
+            .padding(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.medium,
+        shadowElevation = 8.dp
+    ) {
+        HorizontalPager(
+            count = images.size,
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            // --- UI da Imagem (Frente/Verso) ---
+            Image(
+                painter = painterResource(id = images[page]),
+                contentDescription = if (page == 0) "Frente da Carteirinha Universitária" else "Verso da Carteirinha Universitária",
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
+}
+
+// =================================================================================
+// 3. PREVIEW
+// =================================================================================
+
+@Preview(showBackground = true)
+@Composable
+@OptIn(ExperimentalPagerApi::class)
+fun TelaCarteirinhaPreview() {
+    TelaCarteirinha()
 }

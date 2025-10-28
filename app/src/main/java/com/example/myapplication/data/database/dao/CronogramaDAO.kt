@@ -7,24 +7,29 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.myapplication.data.database.entities.Cronograma
 
+// =================================================================================
+// 1. DATA ACCESS OBJECT (DAO): CronogramaDAO
+// =================================================================================
+
 @Dao
 interface CronogramaDAO {
 
+    // --- Operações de Leitura (Suspend Functions) ---
+
     /**
-     * Busca todos os 30 itens de cronograma.
+     * Busca todos os itens de cronograma.
      * Ordena pelo dia do mês para garantir a ordem correta na lista.
      */
     @Query("SELECT * FROM tabela_cronograma ORDER BY diaDoMes ASC")
     suspend fun getAll(): List<Cronograma>
+
+    // --- Operações de Escrita (Suspend Functions) ---
 
     /**
      * Insere uma única entrada de cronograma (usado para popular o banco inicialmente).
      */
     @Insert
     suspend fun insert(item: Cronograma)
-
-    @Delete
-    suspend fun delete(item: Cronograma)
 
     /**
      * Insere múltiplos itens de cronograma de uma só vez (usado para popular os 30 dias).
@@ -38,4 +43,10 @@ interface CronogramaDAO {
      */
     @Update
     suspend fun update(item: Cronograma)
+
+    /**
+     * Deleta um item de cronograma (raramente usado para o cronograma de 30 dias, mas mantido).
+     */
+    @Delete
+    suspend fun delete(item: Cronograma)
 }

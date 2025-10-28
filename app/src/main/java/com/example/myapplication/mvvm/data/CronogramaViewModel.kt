@@ -10,7 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// --- UiState: Define o estado completo da tela de Cronograma ---
+// =================================================================================
+// 1. DATA CLASS: CronogramaUiState (Estado da Tela)
+// =================================================================================
+
 data class CronogramaUiState(
     val listaCronograma: List<Cronograma> = emptyList(),
     val isLoading: Boolean = true,
@@ -18,7 +21,10 @@ data class CronogramaUiState(
     val snackbarMessage: String = "",
 )
 
-// --- ViewModel ---
+// =================================================================================
+// 2. VIEWMODEL: CronogramaViewModel (Lógica de Negócios)
+// =================================================================================
+
 class CronogramaViewModel(private val repository: CronogramaRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CronogramaUiState())
@@ -29,35 +35,42 @@ class CronogramaViewModel(private val repository: CronogramaRepository) : ViewMo
         carregarCronograma()
     }
 
+    /**
+     * Busca ou cria a lista completa do cronograma.
+     */
     fun carregarCronograma() {
-        _uiState.update { it.copy(isLoading = true) } // Inicia o estado de carregamento
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             try {
                 val lista = repository.buscarOuCriarCronograma()
                 _uiState.update {
                     it.copy(
                         listaCronograma = lista,
-                        isLoading = false // Carregamento concluído com sucesso
+                        isLoading = false
                     )
                 }
             } catch (e: Exception) {
-                // Em caso de erro, apenas mostra a lista vazia e encerra o loading
+                // Em caso de erro, encerra o loading
                 _uiState.update { it.copy(isLoading = false) }
+                // Opcional: Adicionar lógica de Snackbar para informar o erro ao usuário
             }
         }
     }
 
+    /**
+     * Salva ou limpa um item do cronograma.
+     */
     fun onSave(itemEditado: Cronograma) {
         viewModelScope.launch {
             try {
                 repository.atualizar(itemEditado)
 
-                val mensagem = if (itemEditado.nome.isNullOrBlank() && itemEditado.horario.isNullOrBlank())
+                val mensagem = if (itemEditado.nome.isNullOrBlank())
                     "Dia ${itemEditado.diaDoMes} limpo!"
                 else
                     "Dia ${itemEditado.diaDoMes} atualizado!"
 
-                // Recarrega a lista para refletir a mudança
+                // Recarrega a lista para refletir a mudança no banco de dados
                 carregarCronograma()
 
                 // Exibe o snackbar
@@ -79,11 +92,17 @@ class CronogramaViewModel(private val repository: CronogramaRepository) : ViewMo
         }
     }
 
+    /**
+     * Evento para fechar o snackbar após a exibição.
+     */
     fun onSnackbarDismiss() = _uiState.update { it.copy(showSnackbar = false) }
 
 }
 
-// --- Factory ---
+// =================================================================================
+// 3. FACTORY: CronogramaViewModelFactory (Injeção de Dependência)
+// =================================================================================
+
 class CronogramaViewModelFactory(private val repository: CronogramaRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CronogramaViewModel::class.java)) {

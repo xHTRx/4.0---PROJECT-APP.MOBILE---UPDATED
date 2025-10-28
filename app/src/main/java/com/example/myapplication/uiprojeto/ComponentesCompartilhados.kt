@@ -1,27 +1,12 @@
 package com.example.myapplication.uiprojeto
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +16,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavGraph.Companion.findStartDestination // MANTIDO: Necessário para a função popUpTo
 
+// =================================================================================
+// 1. CABEÇALHO (TOPO DA TELA)
+// =================================================================================
 
 @Composable
 fun Cabecalho(titulo: String, mostrarIconeDeRosto: Boolean) {
@@ -75,6 +63,24 @@ fun Cabecalho(titulo: String, mostrarIconeDeRosto: Boolean) {
     }
 }
 
+// =================================================================================
+// 2. RODAPÉ (BARRA DE NAVEGAÇÃO INFERIOR)
+// =================================================================================
+
+/**
+ * Função auxiliar para padronizar a navegação no Rodapé.
+ * Garante que a pilha de navegação seja limpa até o início e que apenas uma instância exista.
+ */
+private fun NavController.navigateAndClearStack(route: String) {
+    this.navigate(route) {
+        // Limpa o estado da pilha (back stack) até o destino inicial
+        popUpTo(this@navigateAndClearStack.graph.findStartDestination().id) {
+            saveState = true // Salva o estado do destino anterior, se houver
+        }
+        launchSingleTop = true // Evita múltiplas cópias do mesmo destino
+        restoreState = true // Restaura o estado salvo se o destino estiver no back stack
+    }
+}
 
 @Composable
 fun Rodape(navController: NavController) {
@@ -91,70 +97,49 @@ fun Rodape(navController: NavController) {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                horizontalArrangement = Arrangement.SpaceAround, // Usando SpaceAround para melhor espaçamento
+                modifier = Modifier.fillMaxWidth() // Garantindo que o espaçamento cubra a largura
             ) {
+                // Navegação para Home
                 Image(
                     painter = painterResource(id = R.drawable.casalogo),
                     contentDescription = "Ícone de casa",
-                    modifier = Modifier.size(100.dp)
-                        .clickable {
-                            // Substituído Intent por navController.navigate
-                            navController.navigate("home") {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                            }
-                        }
+                    modifier = Modifier
+                        .size(80.dp) // Reduzido o tamanho para 80.dp para melhor uniformidade
+                        .clickable { navController.navigateAndClearStack("home") }
                 )
+                // Navegação para Carteirinha
                 Image(
                     painter = painterResource(id = R.drawable.celularicone),
                     contentDescription = "Ícone de celular",
-                    modifier = Modifier.size(100.dp)
-                        .clickable {
-                            // Substituído Intent por navController.navigate
-                            navController.navigate("carteirinha") {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                            }
-                        }
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clickable { navController.navigateAndClearStack("carteirinha") }
                 )
+                // Navegação para Ofertas
                 Image(
                     painter = painterResource(id = R.drawable.ofertasicone),
                     contentDescription = "Ícone de ofertas",
-                    modifier = Modifier.size(110.dp)
-                        .clickable {
-                            // Substituído Intent por navController.navigate
-                            navController.navigate("ofertas") {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                            }
-                        }
+                    modifier = Modifier
+                        .size(90.dp) // Mantido maior se necessário para o design
+                        .clickable { navController.navigateAndClearStack("ofertas") }
                 )
+                // Navegação para QR Code
                 Image(
                     painter = painterResource(id = R.drawable.qrcodeicone),
                     contentDescription = "Ícone de QR Code",
                     modifier = Modifier
-                        .size(80.dp)
-                        .clickable {
-                            // Substituído Intent por navController.navigate
-                            navController.navigate("qrcode") {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                            }
-                        }
+                        .size(70.dp) // Reduzido o tamanho
+                        .clickable { navController.navigateAndClearStack("qrcode") }
                 )
             }
         }
     }
 }
 
+// =================================================================================
+// 3. CARD DE SEÇÃO REUTILIZÁVEL (USADO NA TELA HOME)
+// =================================================================================
 
 @Composable
 fun CardSecao(
@@ -165,29 +150,30 @@ fun CardSecao(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier
-            .clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = cor),
+        shape = RoundedCornerShape(8.dp), // Adicionando shape para um visual mais moderno e padrão
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(3.dp),
+                .padding(4.dp), // Aumentando o padding interno
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceEvenly // Usando SpaceEvenly para distribuir o conteúdo
         ) {
             Image(
                 painter = painterResource(id = imagemResId),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(60.dp)
-                    .align(Alignment.CenterHorizontally)
+                contentDescription = null, // Content description pode ser null se o texto do card já for suficiente
+                modifier = Modifier.size(45.dp) // Tamanho ajustado para caber melhor
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            // Removido o Spacer
             Text(
                 text = texto,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White
+                color = Color.White,
+                // Centralizando o texto
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
     }
