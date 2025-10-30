@@ -26,6 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 
 // -------------------------------------------------------------------------
@@ -89,18 +93,19 @@ fun TelaCadastroUsuario(modifier: Modifier = Modifier) {
     // var hasLoadedInitialData by remember { mutableStateOf(false) }
     var isEditing by remember { mutableStateOf(false) }
 
-
     //
     LaunchedEffect(uiState.showSnackbar, uiState.usuarioPrincipal, uiState.isLoading) {
 
         // Lógica do Snackbar
         if (uiState.showSnackbar) {
-            snackbarHostState.showSnackbar(
-                message = uiState.snackbarMessage,
-                actionLabel = uiState.snackbarAction,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.onSnackbarDismiss()
+            CoroutineScope(Dispatchers.IO).launch {
+                snackbarHostState.showSnackbar(
+                    message = uiState.snackbarMessage,
+                    actionLabel = uiState.snackbarAction,
+                    duration = SnackbarDuration.Short
+                )
+                viewModel.onSnackbarDismiss()
+            }
         }
 
         // Lógica para controle do modo de edição/visualização (só após o carregamento)
