@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // 1. KSP - Mantido o mais recente
     id("com.google.devtools.ksp") version "2.0.21-1.0.27"
+    // Firebase
+
 }
 
 android {
