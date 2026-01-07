@@ -2,6 +2,7 @@
 
 Este projeto é uma aplicação Android desenvolvida para servir como uma credencial digital universitária. Originalmente concebido para substituir a carteirinha física via QR Code, o app foi adaptado com funcionalidades de benefícios e ofertas, baseado no personagem Julius — focando em economia e "não gastar dinheiro".
 
+---
 
 ### 🚀 **Funcionalidades**
 
@@ -17,6 +18,7 @@ Este projeto é uma aplicação Android desenvolvida para servir como uma creden
 
 👤 **Cadastro de Usuário:** Sistema CRUD completo para gerenciar as informações do perfil do estudante.
 
+---
 
 ### 🛠️ **Tecnologias e Arquitetura**
 O projeto utiliza as práticas mais modernas recomendadas para o desenvolvimento Android:
@@ -33,6 +35,7 @@ O projeto utiliza as práticas mais modernas recomendadas para o desenvolvimento
 
 **Navegação:** Jetpack Navigation Compose.
 
+---
 
 ### **📂 Estrutura do Projeto**
 O código está organizado seguindo padrões de Clean Architecture:
@@ -43,10 +46,12 @@ O código está organizado seguindo padrões de Clean Architecture:
 
 *data/database/:* Configuração do banco de dados Room (Entities, DAOs e AppDatabase).
 
+---
 
 ### 💡 Como Funciona o Banco de Dados?
 O app utiliza o padrão Singleton para garantir uma única instância do banco de dados. Ao iniciar a tela de Cronograma, o CronogramaRepository verifica se a tabela está vazia; caso positivo, ele popula automaticamente os 30 dias do mês, garantindo que o usuário sempre tenha uma estrutura pronta para editar.
 
+---
 ### 📝 *Nota de Desenvolvimento*
 *Este projeto foi baseado em uma aplicação real de uso universitário. Atualmente, encontra-se em estado de "concluído para portfólio", servindo como demonstração de habilidades em persistência de dados local, fluxos de navegação complexos e UI moderna com Compose.*
 
